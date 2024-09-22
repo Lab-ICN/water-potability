@@ -16,25 +16,26 @@ import (
 
 func mux() http.Handler {
 	r := chi.NewRouter()
-
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
+	v1 := chi.NewRouter()
+	v1.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Healthy"))
 	})
+	r.Mount("/api/v1", v1)
 
 	return r
 }
 
 func main() {
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: mux()}
-	serverCtx, cancelServerCtx := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		<-sig
-		shutdownCtx, cancel := context.WithTimeout(serverCtx, 30*time.Second)
+		shutdownCtx, cancelShutdownCtx := context.WithTimeout(ctx, 30*time.Second)
 
 		go func() {
 			<-shutdownCtx.Done()
@@ -47,8 +48,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		cancelShutdownCtx()
 		cancel()
-		cancelServerCtx()
 	}()
 
 	fmt.Printf("server running on %s\n", server.Addr)
@@ -57,5 +58,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	<-serverCtx.Done()
+	<-ctx.Done()
 }
