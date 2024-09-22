@@ -16,7 +16,6 @@ import (
 
 func mux() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 
 	v1 := chi.NewRouter()

@@ -1,0 +1,8 @@
+.git
+.envrc
+.gitignore
+Dockerfile
+Makefile
+*.md
+flake.nix
+flake.lock
