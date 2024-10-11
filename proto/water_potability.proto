@@ -1,6 +1,6 @@
 syntax = "proto3";
 package  water_potability;
-option go_package = "./internal/water_potability/handler/rpc/pb";
+option go_package = "./internal/water_potability/interface/rpc";
 
 
 service WaterPotabilityService {
@@ -8,10 +8,9 @@ service WaterPotabilityService {
 }
 
 message PredictWaterPotabilityRequest {
-  string id = 1;
-  double ph = 2;
-  double totalDissolveSolids = 3;
-  double turbidity = 4;  
+  double ph = 1;
+  double totalDissolveSolids = 2;
+  double turbidity = 3;  
 }
 
 message PredictWaterPotabilityResponse {

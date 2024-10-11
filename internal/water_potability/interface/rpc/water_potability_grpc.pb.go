@@ -4,7 +4,7 @@
 // - protoc             v5.28.0
 // source: water_potability.proto
 
-package pb
+package rpc
 
 import (
 	context "context"
