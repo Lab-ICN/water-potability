@@ -15,7 +15,6 @@ message PredictWaterPotabilityRequest {
 
 message PredictWaterPotabilityResponse {
   double prediction = 1;
-  string level = 2;
   Error error = 3;
 }
 

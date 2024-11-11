@@ -37,6 +37,5 @@ func (s *WaterPotabilityService) PredictWaterPotability(ctx context.Context, wp 
 		TotalDissolvedSolids: wp.TotalDissolvedSolids,
 		Turbidity:            wp.Turbidity,
 		Prediction:           res.Prediction,
-		Level:                res.Level,
 	})
 }

@@ -18,7 +18,6 @@ type WaterPotabilityServer struct {
 func (s *WaterPotabilityServer) PredictWaterPotability(ctx context.Context, in *pb.PredictWaterPotabilityRequest) (*pb.PredictWaterPotabilityResponse, error) {
 	return &pb.PredictWaterPotabilityResponse{
 		Prediction: 100,
-		Level:      "Height",
 	}, nil
 }
 
