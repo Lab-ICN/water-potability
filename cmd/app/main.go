@@ -1,88 +1,55 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
-	"net/http"
 	"os"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/joho/godotenv"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/lab-icn/water-potability-sensor-service/internal/infra"
-	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
+	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
 	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
 	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/repository"
 	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-func mux() http.Handler {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-
-	v1 := chi.NewRouter()
-	v1.Get("/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Healthy"))
-	})
-	r.Mount("/api/v1", v1)
-
-	return r
-}
-
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	ctx := context.Background()
 
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	}
-
-	conn, err := grpc.NewClient(os.Getenv("GRPC_ADDR"), opts...)
+	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Fatalf("failed to dial grpc: %v", err)
-		return
+		log.Fatalf("Fail to create logger instance: %v\n", err)
 	}
-
-	defer conn.Close()
-
-	wpGrpcClient := pb.NewWaterPotabilityServiceClient(conn)
-
-	influxDB := infra.NewInfluxDB(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
-	wpRepository := repository.NewWaterPotabilityRepository(influxDB)
-	wpService := service.NewWaterPotabilityService(wpRepository, wpGrpcClient)
-
-	mqtt.NewMQTT(wpService)
-
-	// server := &http.Server{Addr: "0.0.0.0:8080", Handler: mux()}
-	// ctx, cancel := context.WithCancel(context.Background())
-	// sig := make(chan os.Signal, 1)
-	// signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	// go func() {
-	// 	<-sig
-	// 	shutdownCtx, cancelShutdownCtx := context.WithTimeout(ctx, 30*time.Second)
-
-	// 	go func() {
-	// 		<-shutdownCtx.Done()
-	// 		if shutdownCtx.Err() == context.DeadlineExceeded {
-	// 			log.Fatal("graceful shutdown timed out.. forcing exit.")
-	// 		}
-	// 	}()
-
-	// 	err := server.Shutdown(shutdownCtx)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	cancelShutdownCtx()
-	// 	cancel()
-	// }()
-
-	// fmt.Printf("server running on %s\n", server.Addr)
-	// err := server.ListenAndServe()
-	// if err != nil && err != http.ErrServerClosed {
-	// 	log.Fatal(err)
-	// }
-
-	// <-ctx.Done()
+	defer logger.Sync()
+	grpcClient, err := grpc.NewClient(
+		os.Getenv("GRPC_ADDR"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Fail to start gRPC connection: %v\n", err)
+	}
+	defer grpcClient.Close()
+	mqttOpts := mqtt.NewClientOptions().
+		AddBroker(fmt.Sprintf("%s://%s:%s", os.Getenv("MQTT_PROTOCOL"), os.Getenv("MQTT_HOST"), os.Getenv("MQTT_PORT"))).
+		SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
+			logger.Info("message received", zap.String("topic", msg.Topic()), zap.ByteString("payload", msg.Payload()))
+		})
+	mqttClient := mqtt.NewClient(mqttOpts)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		log.Fatalf("Connection failed to MQTT Broker: %v\n", token.Error())
+	}
+	influxdb := infra.NewInfluxDB(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
+	if running, err := influxdb.Ping(ctx); err != nil || !running {
+		log.Fatalf("Fail to ping InfluxDB: %v\n", err)
+	}
+	defer influxdb.Close()
+	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
+	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
+	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
+	_mqtt.NewMQTT(wpService)
 }
