@@ -1,5 +1,5 @@
 api:
-	@go run cmd/app/main.go
+	@go run cmd/api/main.go
 
 grpc:
 	@go run cmd/grpc/server.go
