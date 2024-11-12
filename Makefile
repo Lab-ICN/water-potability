@@ -10,6 +10,9 @@ generate-rpc:
 compose/up:
 	@docker compose --file testing.compose.yaml up --detach --no-deps
 
+compose/fresh:
+	@docker compose --file testing.compose.yaml up --detach --no-deps --build
+
 compose/down:
 	@docker compose --file testing.compose.yaml down
 
@@ -21,5 +24,6 @@ compose/ps:
 	grpc
 	generate-rpc
 	compose/up
+	compose/fresh
 	compose/down
 	compose/ps
