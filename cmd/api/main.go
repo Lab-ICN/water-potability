@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/joho/godotenv/autoload"
@@ -44,6 +47,17 @@ func main() {
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
 	mqttAdapter.NewMqttHandler(mqttClient, wpService)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGILL, syscall.SIGTERM)
+	done := make(chan struct{}, 1)
+	go func() {
+		<-sig
+		log.Println("shutting down...")
+		done <- struct{}{}
+	}()
+	<-done
+	log.Println("exiting...")
 }
 
 func mockPublisher(client mqtt.Client) error {

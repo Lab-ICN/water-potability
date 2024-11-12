@@ -4,16 +4,13 @@ go 1.22.5
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/go-chi/chi/v5 v5.1.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.67.0
 	google.golang.org/protobuf v1.34.2
 )
 
-require (
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
-)
+require go.uber.org/multierr v1.11.0 // indirect
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
