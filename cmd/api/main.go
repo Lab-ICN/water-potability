@@ -44,9 +44,6 @@ func main() {
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
 	mqttAdapter.NewMqttHandler(mqttClient, wpService)
-
-	logger.Debug("debug")
-	mockPublisher(mqttClient)
 }
 
 func mockPublisher(client mqtt.Client) error {

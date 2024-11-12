@@ -2,8 +2,10 @@ package mqtt
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
@@ -22,6 +24,8 @@ func NewMqttHandler(client mqtt.Client, service service.WaterPotabilityServiceIt
 }
 
 func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 	buf := new(bytes.Buffer)
 	if _, err := buf.Write(msg.Payload()); err != nil {
 		log.Printf("Error writing payload to buffer: %v", err)
@@ -33,9 +37,9 @@ func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	log.Printf("DEBUG: calling rpc\n")
-	// err := h.service.PredictWaterPotability(context.Background(), potability)
-	// if err != nil {
-	// 	log.Printf("Error predicting water potability data: %v", err)
-	// 	return
-	// }
+	err := h.service.PredictWaterPotability(ctx, potability)
+	if err != nil {
+		log.Printf("Error predicting water potability data: %v", err)
+		return
+	}
 }
