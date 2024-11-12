@@ -1,21 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
-	"os"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/lab-icn/water-potability-sensor-service/internal/infra"
-	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
+	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
+	"github.com/lab-icn/water-potability-sensor-service/internal/grpc"
+	"github.com/lab-icn/water-potability-sensor-service/internal/influxdb"
+	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/mqtt"
+	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
 	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
 	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/repository"
 	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -23,33 +24,43 @@ func main() {
 
 	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Fatalf("Fail to create logger instance: %v\n", err)
+		log.Fatalf("Failed to create logger instance: %v\n", err)
 	}
 	defer logger.Sync()
-	grpcClient, err := grpc.NewClient(
-		os.Getenv("GRPC_ADDR"),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	grpcClient, err := grpc.NewClient()
 	if err != nil {
-		log.Fatalf("Fail to start gRPC connection: %v\n", err)
+		log.Fatalf("Failed to start gRPC connection: %v\n", err)
 	}
-	defer grpcClient.Close()
-	mqttOpts := mqtt.NewClientOptions().
-		AddBroker(fmt.Sprintf("%s://%s:%s", os.Getenv("MQTT_PROTOCOL"), os.Getenv("MQTT_HOST"), os.Getenv("MQTT_PORT"))).
-		SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
-			logger.Info("message received", zap.String("topic", msg.Topic()), zap.ByteString("payload", msg.Payload()))
-		})
-	mqttClient := mqtt.NewClient(mqttOpts)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("Connection failed to MQTT Broker: %v\n", token.Error())
+	mqttClient, err := _mqtt.NewClient(logger)
+	if err != nil {
+		log.Fatalf("Failed to start MQTT connection: %v\n", err)
 	}
-	influxdb := infra.NewInfluxDB(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
-	if running, err := influxdb.Ping(ctx); err != nil || !running {
-		log.Fatalf("Fail to ping InfluxDB: %v\n", err)
+	influxdb, err := influxdb.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Failed to start InfluxDB connection: %v\n", err)
 	}
-	defer influxdb.Close()
+
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
-	_mqtt.NewMQTT(wpService)
+	mqttAdapter.NewMqttHandler(mqttClient, wpService)
+
+	logger.Debug("debug")
+	mockPublisher(mqttClient)
+}
+
+func mockPublisher(client mqtt.Client) error {
+	buffer := new(bytes.Buffer)
+	if err := json.NewEncoder(buffer).Encode(domain.WaterPotability{
+		PH:                   7.5,
+		Turbidity:            5.5,
+		TotalDissolvedSolids: 100,
+	}); err != nil {
+		return err
+	}
+	for range 1000 {
+		token := client.Publish("/foo/bar", byte(1), false, buffer.Bytes())
+		token.Wait()
+	}
+	return nil
 }

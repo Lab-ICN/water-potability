@@ -9,25 +9,24 @@ import (
 )
 
 type WaterPotabilityService struct {
-	repository          repository.WaterPotabilityRepositoryItf
-	grpcWaterPotability pb.WaterPotabilityServiceClient
+	repository repository.WaterPotabilityRepositoryItf
+	client     pb.WaterPotabilityServiceClient
 }
 
 type WaterPotabilityServiceItf interface {
 	PredictWaterPotability(ctx context.Context, wp domain.WaterPotability) error
 }
 
-func NewWaterPotabilityService(repository repository.WaterPotabilityRepositoryItf, grpcWaterPotability pb.WaterPotabilityServiceClient) *WaterPotabilityService {
-	return &WaterPotabilityService{repository: repository, grpcWaterPotability: grpcWaterPotability}
+func NewWaterPotabilityService(repository repository.WaterPotabilityRepositoryItf, client pb.WaterPotabilityServiceClient) *WaterPotabilityService {
+	return &WaterPotabilityService{repository, client}
 }
 
 func (s *WaterPotabilityService) PredictWaterPotability(ctx context.Context, wp domain.WaterPotability) error {
-	res, err := s.grpcWaterPotability.PredictWaterPotability(ctx, &pb.PredictWaterPotabilityRequest{
+	res, err := s.client.PredictWaterPotability(ctx, &pb.PredictWaterPotabilityRequest{
 		Ph:                  wp.PH,
 		TotalDissolveSolids: wp.TotalDissolvedSolids,
 		Turbidity:           wp.Turbidity,
 	})
-
 	if err != nil {
 		return err
 	}

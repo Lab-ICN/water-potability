@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+---
+volumes:
+  persistence-mqtt:
+
+services:
+  api:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      INFLUXDB_PROTOCOL: ${INFLUXDB_PROTOCOL:?error}
+      INFLUXDB_HOST: influxdb
+      INFLUXDB_PORT: 8086
+      INFLUXDB_USERNAME: ${INFLUXDB_USERNAME:?error}
+      INFLUXDB_PASSWORD: ${INFLUXDB_PASSWORD:?error}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?error}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:?error}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:?error}
+      MQTT_PROTOCOL: ${MQTT_PROTOCOL:?error}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:?error}
+      MQTT_USERNAME: ${MQTT_USERNAME:?error}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?error}
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20-openssl
+    volumes:
+      - persistence-mqtt:/mosquitto/data
+      # - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      # - ./passwd:/mosquitto/config/passwd
+    ports:
+      - 127.0.0.1:1883:1883
+
+  influxdb:
+    image: influxdb:2.7.10-alpine
+    env_file: .env
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME:?error}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:?error}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:?error}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:?error}
+    ports:
+      - 127.0.0.1:8086:8086
