@@ -10,15 +10,17 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
 	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
+	"go.uber.org/zap"
 )
 
 type handler struct {
 	service service.WaterPotabilityServiceItf
+	logger  *zap.Logger
 }
 
-func NewMqttHandler(client mqtt.Client, service service.WaterPotabilityServiceItf) {
-	handler := &handler{service}
-	if token := client.Subscribe("wp", byte(1), handler.sensorSubscriber); token.Wait() && token.Error() != nil {
+func NewMqttHandler(client mqtt.Client, logger *zap.Logger, service service.WaterPotabilityServiceItf) {
+	handler := &handler{service, logger}
+	if token := client.Subscribe("wp", 1, handler.sensorSubscriber); token.Wait() && token.Error() != nil {
 		log.Fatalf("Error subscribing to topic: %v", token.Error())
 	}
 }

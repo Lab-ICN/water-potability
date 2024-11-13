@@ -34,19 +34,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to start gRPC connection: %v\n", err)
 	}
+	defer grpcClient.Close()
 	mqttClient, err := _mqtt.NewClient(logger)
 	if err != nil {
 		log.Fatalf("Failed to start MQTT connection: %v\n", err)
 	}
+	defer mqttClient.Disconnect(250)
 	influxdb, err := influxdb.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("Failed to start InfluxDB connection: %v\n", err)
 	}
+	defer influxdb.Close()
 
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
-	mqttAdapter.NewMqttHandler(mqttClient, wpService)
+	mqttAdapter.NewMqttHandler(mqttClient, logger, wpService)
+
+	log.Println("client server running...")
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGILL, syscall.SIGTERM)
@@ -70,7 +75,7 @@ func mockPublisher(client mqtt.Client) error {
 		return err
 	}
 	for range 1000 {
-		token := client.Publish("/foo/bar", byte(1), false, buffer.Bytes())
+		token := client.Publish("wp", 1, false, buffer.Bytes())
 		token.Wait()
 	}
 	return nil

@@ -1,10 +1,5 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 ---
-name: waterpotability
-
-volumes:
-  persistence-mqtt:
-
 services:
   api:
     build: ..
@@ -21,8 +16,8 @@ services:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:?error}
-      MQTT_USERNAME: ${MQTT_USERNAME:?error}
-      MQTT_PASSWORD: ${MQTT_PASSWORD:?error}
+      MQTT_USERNAME: mirzaganteng
+      MQTT_PASSWORD: admin
     depends_on:
       mosquitto:
         condition: service_healthy
@@ -31,35 +26,3 @@ services:
         condition: service_healthy
         restart: true
 
-  mosquitto:
-    image: eclipse-mosquitto:2.0.20-openssl
-    user: 1000:100
-    volumes:
-      - persistence-mqtt:/mosquitto/data
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-    ports:
-      - 127.0.0.1:1883:1883
-    # ref: https://github.com/eclipse-mosquitto/mosquitto/issues/1270#issuecomment-1476038461
-    healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
-
-  influxdb:
-    image: influxdb:2.7.10-alpine
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME:?error}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:?error}
-      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:?error}
-      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:?error}
-    ports:
-      - 127.0.0.1:8086:8086
-    healthcheck:
-      test: influx ping || exit 1
-      interval: 60s
-      retries: 5
-      start_period: 20s
-      timeout: 10s
