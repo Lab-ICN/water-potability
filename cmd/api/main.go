@@ -1,61 +1,82 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
+	"github.com/lab-icn/water-potability-sensor-service/internal/grpc"
+	"github.com/lab-icn/water-potability-sensor-service/internal/influxdb"
+	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/mqtt"
+	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
+	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
+	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/repository"
+	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
+	"go.uber.org/zap"
 )
 
-func mux() http.Handler {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-
-	v1 := chi.NewRouter()
-	v1.Get("/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Healthy"))
-	})
-	r.Mount("/api/v1", v1)
-
-	return r
-}
-
 func main() {
-	server := &http.Server{Addr: "0.0.0.0:8080", Handler: mux()}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Failed to create logger instance: %v\n", err)
+	}
+	defer logger.Sync()
+	grpcClient, err := grpc.NewClient()
+	if err != nil {
+		log.Fatalf("Failed to start gRPC connection: %v\n", err)
+	}
+	defer grpcClient.Close()
+	mqttClient, err := _mqtt.NewClient(logger)
+	if err != nil {
+		log.Fatalf("Failed to start MQTT connection: %v\n", err)
+	}
+	defer mqttClient.Disconnect(250)
+	influxdb, err := influxdb.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Failed to start InfluxDB connection: %v\n", err)
+	}
+	defer influxdb.Close()
+
+	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
+	wpRepository := repository.NewWaterPotabilityRepository(influxdb)
+	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
+	mqttAdapter.NewMqttHandler(mqttClient, logger, wpService)
+
+	log.Println("client server running...")
+
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(sig, syscall.SIGILL, syscall.SIGTERM)
+	done := make(chan struct{}, 1)
 	go func() {
 		<-sig
-		shutdownCtx, cancelShutdownCtx := context.WithTimeout(ctx, 30*time.Second)
-
-		go func() {
-			<-shutdownCtx.Done()
-			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Fatal("graceful shutdown timed out.. forcing exit.")
-			}
-		}()
-
-		err := server.Shutdown(shutdownCtx)
-		if err != nil {
-			log.Fatal(err)
-		}
-		cancelShutdownCtx()
-		cancel()
+		log.Println("shutting down...")
+		done <- struct{}{}
 	}()
+	<-done
+	log.Println("exiting...")
+}
 
-	fmt.Printf("server running on %s\n", server.Addr)
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+func mockPublisher(client mqtt.Client) error {
+	buffer := new(bytes.Buffer)
+	if err := json.NewEncoder(buffer).Encode(domain.WaterPotability{
+		PH:                   7.5,
+		Turbidity:            5.5,
+		TotalDissolvedSolids: 100,
+	}); err != nil {
+		return err
 	}
-
-	<-ctx.Done()
+	for range 1000 {
+		token := client.Publish("wp", 1, false, buffer.Bytes())
+		token.Wait()
+	}
+	return nil
 }

@@ -1,0 +1,41 @@
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+---
+name: waterpotability
+
+volumes:
+  persistence-mqtt:
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20-openssl
+    volumes:
+      - persistence-mqtt:/mosquitto/data
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:rw
+      - ./passwd:/mosquitto/config/passwd:rw
+    ports:
+      - 127.0.0.1:1883:1883
+    # ref: https://github.com/eclipse-mosquitto/mosquitto/issues/1270#issuecomment-1476038461
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-u", "mirzaganteng", "-P", "admin", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  influxdb:
+    image: influxdb:2.7.10-alpine
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME:?error}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:?error}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:?error}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:?error}
+    ports:
+      - 127.0.0.1:8086:8086
+    healthcheck:
+      test: influx ping || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
