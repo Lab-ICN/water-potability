@@ -23,5 +23,6 @@ go.work.sum
 
 # Others...
 .env
+.envrc
 passwd
 
