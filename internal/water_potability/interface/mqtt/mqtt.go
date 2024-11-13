@@ -18,7 +18,7 @@ type handler struct {
 
 func NewMqttHandler(client mqtt.Client, service service.WaterPotabilityServiceItf) {
 	handler := &handler{service}
-	if token := client.Subscribe("/foo/bar", byte(1), handler.sensorSubscriber); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe("wp", byte(1), handler.sensorSubscriber); token.Wait() && token.Error() != nil {
 		log.Fatalf("Error subscribing to topic: %v", token.Error())
 	}
 }
@@ -36,9 +36,7 @@ func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Error decode message payload: %v", err)
 		return
 	}
-	log.Printf("DEBUG: calling rpc\n")
-	err := h.service.PredictWaterPotability(ctx, potability)
-	if err != nil {
+	if err := h.service.PredictWaterPotability(ctx, potability); err != nil {
 		log.Printf("Error predicting water potability data: %v", err)
 		return
 	}
