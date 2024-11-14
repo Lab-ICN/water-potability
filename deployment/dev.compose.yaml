@@ -5,6 +5,7 @@ name: waterpotability
 
 volumes:
   persistence-mqtt:
+  persistent-grafana:
 
 services:
   mosquitto:
@@ -39,3 +40,11 @@ services:
       retries: 5
       start_period: 20s
       timeout: 10s
+
+  grafana:
+    image: grafana/grafana-oss:11.3.0-security-01-ubuntu
+    volumes:
+      - persistent-grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+

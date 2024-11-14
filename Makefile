@@ -13,6 +13,19 @@ compose/up:
 compose/down:
 	@docker compose --file deployment/dev.compose.yaml --env-file .env down
 
+compose/testing:
+	@docker compose \
+		--file deployment/dev.compose.yaml \
+		--file deployment/testing.compose.yaml \
+		--env-file .env \
+		up --detach --no-deps
+
+compose/testing.down:
+	@docker compose \
+		--file deployment/dev.compose.yaml \
+		--file deployment/testing.compose.yaml \
+		--env-file .env \
+		down --detach --no-deps
 
 .PHONY:
 	api
@@ -20,3 +33,5 @@ compose/down:
 	generate-rpc
 	compose/up
 	compose/down
+	compose/testing
+	compose/testing.down

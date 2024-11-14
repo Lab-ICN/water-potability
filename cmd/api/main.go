@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/joho/godotenv/autoload"
@@ -80,6 +81,7 @@ func mockPublisher(client mqtt.Client) error {
 	for range 1000 {
 		token := client.Publish("wp", 1, false, buffer.Bytes())
 		token.Wait()
+		time.Sleep(1 * time.Second)
 	}
 	return nil
 }
