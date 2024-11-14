@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
-	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
-	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/repository"
+	pb "github.com/lab-icn/water-potability-sensor-service/internal/interface/rpc"
+	"github.com/lab-icn/water-potability-sensor-service/internal/repository"
 )
 
 type WaterPotabilityService struct {

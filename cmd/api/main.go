@@ -14,11 +14,11 @@ import (
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
 	"github.com/lab-icn/water-potability-sensor-service/internal/grpc"
 	"github.com/lab-icn/water-potability-sensor-service/internal/influxdb"
+	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
+	pb "github.com/lab-icn/water-potability-sensor-service/internal/interface/rpc"
 	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/mqtt"
-	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/mqtt"
-	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
-	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/repository"
-	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
+	"github.com/lab-icn/water-potability-sensor-service/internal/repository"
+	"github.com/lab-icn/water-potability-sensor-service/internal/service"
 	"go.uber.org/zap"
 )
 

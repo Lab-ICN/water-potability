@@ -9,7 +9,7 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
-	"github.com/lab-icn/water-potability-sensor-service/internal/water_potability/service"
+	"github.com/lab-icn/water-potability-sensor-service/internal/service"
 	"go.uber.org/zap"
 )
 

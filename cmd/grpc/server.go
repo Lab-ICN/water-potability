@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	pb "github.com/lab-icn/water-potability-sensor-service/internal/water_potability/interface/rpc"
+	pb "github.com/lab-icn/water-potability-sensor-service/internal/interface/rpc"
 	"google.golang.org/grpc"
 )
 
