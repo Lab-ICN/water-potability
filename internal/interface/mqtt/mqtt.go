@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
+	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -27,37 +28,47 @@ func NewMqttHandler(client mqtt.Client, logger *zap.Logger, service service.Wate
 }
 
 func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
-	log.Printf("Received message on topic '%s'", msg.Topic())
-	log.Printf("Payload received: %s", string(msg.Payload()))
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
-	ciphertext, err := base64.StdEncoding.DecodeString(string(msg.Payload()))
+	cipher, err := base64.StdEncoding.DecodeString(string(msg.Payload()))
 	if err != nil {
-		log.Printf("Error decoding base64 payload: %v", err)
-		log.Printf("Failed payload: %s", string(msg.Payload()))
+		h.logger.Error(
+			"failed to decode base64 encoded message",
+			zap.String("topic", msg.Topic()),
+			zap.ByteString("payload", msg.Payload()),
+			zap.Error(err),
+		)
 		return
 	}
-
-	plaintext, err := aes.DecryptAESGCM(ciphertext)
+	plaintext, err := aes.Decrypt(
+		cipher,
+		[]byte(os.Getenv("AES_KEY")),
+		[]byte(os.Getenv("AES_IV")),
+	)
 	if err != nil {
-		log.Printf("Error decrypting message payload: %v", err)
-		log.Printf("Failed payload: %s", string(msg.Payload()))
+		h.logger.Error(
+			"failed to decrypt aes cipher",
+			zap.ByteString("cipher", cipher),
+			zap.Error(err),
+		)
 		return
 	}
-
-	log.Printf("Decrypted payload: %s", plaintext)
+	h.logger.Debug(
+		"decrypted aes message",
+		zap.String("payload", plaintext),
+	)
 
 	var potability domain.WaterPotability
 	if err := json.Unmarshal([]byte(plaintext), &potability); err != nil {
-		log.Printf("Error decoding JSON from decrypted payload: %v", err)
-		log.Printf("Failed plaintext: %s", plaintext)
+		h.logger.Error(
+			"failed to unmarshal json to struct",
+			zap.String("plaintext", plaintext),
+			zap.Error(err),
+		)
 		return
 	}
-
 	if err := h.service.PredictWaterPotability(ctx, potability); err != nil {
-		log.Printf("Error predicting water potability data: %v", err)
+		h.logger.Error("failed to predict water potability", zap.Error(err))
 		return
 	}
 }
