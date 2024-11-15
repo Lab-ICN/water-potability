@@ -30,16 +30,19 @@ func main() {
 		log.Fatalf("Failed to create logger instance: %v\n", err)
 	}
 	defer logger.Sync()
+
 	grpcClient, err := grpc.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to start gRPC connection: %v\n", err)
 	}
 	defer grpcClient.Close()
+
 	mqttClient, err := _mqtt.NewClient(logger)
 	if err != nil {
 		log.Fatalf("Failed to start MQTT connection: %v\n", err)
 	}
 	defer mqttClient.Disconnect(250)
+
 	influxdb, err := influxdb.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("Failed to start InfluxDB connection: %v\n", err)
