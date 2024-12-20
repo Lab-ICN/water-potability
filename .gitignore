@@ -25,4 +25,5 @@ go.work.sum
 .env
 .envrc
 passwd
+config*.json
 

@@ -2,32 +2,27 @@ package repository
 
 import (
 	"context"
-	"os"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/lab-icn/water-potability-sensor-service/internal/config"
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
 )
 
 type WaterPotabilityRepository struct {
-	influxdb       influxdb2.Client
-	orgInfluxdb    string
-	bucketInfluxdb string
+	influxdb influxdb2.Client
+	cfg      *config.InfluxDB
 }
 
 type WaterPotabilityRepositoryItf interface {
 	WriteWaterPotabilityWithPrediction(ctx context.Context, wp domain.WaterPotabilityWithPrediction) error
 }
 
-func NewWaterPotabilityRepository(influxdb influxdb2.Client) *WaterPotabilityRepository {
-	orgInfluxdb := os.Getenv("INFLUXDB_ORG")
-	bucketInfluxdb := os.Getenv("INFLUXDB_BUCKET")
-
-	return &WaterPotabilityRepository{
-		influxdb:       influxdb,
-		orgInfluxdb:    orgInfluxdb,
-		bucketInfluxdb: bucketInfluxdb,
-	}
+func NewWaterPotabilityRepository(
+	influxdb influxdb2.Client,
+	cfg *config.InfluxDB,
+) *WaterPotabilityRepository {
+	return &WaterPotabilityRepository{influxdb, cfg}
 }
 
 func (r *WaterPotabilityRepository) WriteWaterPotabilityWithPrediction(ctx context.Context, wp domain.WaterPotabilityWithPrediction) error {
@@ -39,5 +34,5 @@ func (r *WaterPotabilityRepository) WriteWaterPotabilityWithPrediction(ctx conte
 		AddField("level", wp.Level).
 		SetTime(time.Now())
 
-	return r.influxdb.WriteAPIBlocking(r.orgInfluxdb, r.bucketInfluxdb).WritePoint(ctx, writeApi)
+	return r.influxdb.WriteAPIBlocking(r.cfg.Org, r.cfg.Bucket).WritePoint(ctx, writeApi)
 }

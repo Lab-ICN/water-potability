@@ -22,19 +22,19 @@ func NewWaterPotabilityService(repository repository.WaterPotabilityRepositoryIt
 }
 
 func (s *WaterPotabilityService) PredictWaterPotability(ctx context.Context, wp domain.WaterPotability) error {
-	res, err := s.client.PredictWaterPotability(ctx, &pb.PredictWaterPotabilityRequest{
-		Ph:                  wp.PH,
-		TotalDissolveSolids: wp.TotalDissolvedSolids,
-		Turbidity:           wp.Turbidity,
-	})
-	if err != nil {
-		return err
-	}
+	// res, err := s.client.PredictWaterPotability(ctx, &pb.PredictWaterPotabilityRequest{
+	// 	Ph:                  wp.PH,
+	// 	TotalDissolveSolids: wp.TotalDissolvedSolids,
+	// 	Turbidity:           wp.Turbidity,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	return s.repository.WriteWaterPotabilityWithPrediction(ctx, domain.WaterPotabilityWithPrediction{
 		PH:                   wp.PH,
 		TotalDissolvedSolids: wp.TotalDissolvedSolids,
 		Turbidity:            wp.Turbidity,
-		Prediction:           res.Prediction,
+		// Prediction:           res.Prediction,
 	})
 }

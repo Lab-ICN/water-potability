@@ -2,73 +2,67 @@ package mqtt
 
 import (
 	"context"
-	"encoding/base64"
+	"crypto/aes"
 	"encoding/json"
-	"log"
-	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/lab-icn/water-potability-sensor-service/internal/aes"
+	"github.com/lab-icn/water-potability-sensor-service/internal/aes256"
+	"github.com/lab-icn/water-potability-sensor-service/internal/config"
 	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
 	"github.com/lab-icn/water-potability-sensor-service/internal/service"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 type handler struct {
 	service service.WaterPotabilityServiceItf
-	logger  *zap.Logger
+	cfg     *config.AES
+	log     *zerolog.Logger
 }
 
-func NewMqttHandler(client mqtt.Client, logger *zap.Logger, service service.WaterPotabilityServiceItf) {
-	handler := &handler{service, logger}
-	if token := client.Subscribe("wp", 1, handler.sensorSubscriber); token.Wait() && token.Error() != nil {
-		log.Fatalf("Error subscribing to topic: %v", token.Error())
+func NewMqttHandler(
+	client mqtt.Client,
+	cfg *config.AES,
+	log *zerolog.Logger,
+	service service.WaterPotabilityServiceItf,
+) {
+	handler := &handler{service, cfg, log}
+	token := client.Subscribe("/wp", 1, handler.sensorSubscriber)
+	<-token.Done()
+	if token.Error() != nil {
+		log.Err(token.Error()).Msg("subscribing to mqtt topic")
 	}
 }
 
 func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	cipher, err := base64.StdEncoding.DecodeString(string(msg.Payload()))
-	if err != nil {
-		h.logger.Error(
-			"failed to decode base64 encoded message",
-			zap.String("topic", msg.Topic()),
-			zap.ByteString("payload", msg.Payload()),
-			zap.Error(err),
-		)
-		return
-	}
-	plaintext, err := aes.Decrypt(
-		cipher,
-		[]byte(os.Getenv("AES_KEY")),
-		[]byte(os.Getenv("AES_IV")),
+	h.log.Debug().
+		Str("topic", msg.Topic()).
+		Msg(string(msg.Payload()))
+
+	jsonstr, err := aes256.Decrypt(
+		string(msg.Payload()),
+		h.cfg.Key[:aes.BlockSize*2],
 	)
 	if err != nil {
-		h.logger.Error(
-			"failed to decrypt aes cipher",
-			zap.ByteString("cipher", cipher),
-			zap.Error(err),
-		)
+		h.log.Err(err).
+			Bytes("payload", msg.Payload()).
+			Msg("decrypting mqtt payload aes cipher")
 		return
 	}
-	h.logger.Debug(
-		"decrypted aes message",
-		zap.String("payload", plaintext),
-	)
+	h.log.Debug().Msg(jsonstr)
 
 	var potability domain.WaterPotability
-	if err := json.Unmarshal([]byte(plaintext), &potability); err != nil {
-		h.logger.Error(
-			"failed to unmarshal json to struct",
-			zap.String("plaintext", plaintext),
-			zap.Error(err),
-		)
+	if err := json.Unmarshal([]byte(jsonstr), &potability); err != nil {
+		h.log.Err(err).
+			Str("payload", jsonstr).
+			Msg("decoding mqtt json payload string to struct")
 		return
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 	if err := h.service.PredictWaterPotability(ctx, potability); err != nil {
-		h.logger.Error("failed to predict water potability", zap.Error(err))
+		h.log.Err(err).Msg("predict water potability")
 		return
 	}
 }

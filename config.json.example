@@ -1,0 +1,28 @@
+{
+    "grpc": {
+        "protocol": "tcp",
+        "host": "localhost",
+        "port": 8080
+    },
+    "influxdb": {
+        "protocol": "http",
+        "host": "localhost",
+        "port": 8086,
+        "username": "username",
+        "password": "password",
+        "org": "org",
+        "bucket": "bucket"
+    },
+    "mqtt": {
+        "protocol": "tcp",
+        "host": "localhost",
+        "port": 8080,
+        "clientID": 1,
+        "username": "username",
+        "password": "password"
+    },
+    "aes": {
+        "key": "key",
+        "iv": "iv"
+    }
+}

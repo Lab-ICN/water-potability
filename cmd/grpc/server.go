@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/lab-icn/water-potability-sensor-service/internal/config"
 	pb "github.com/lab-icn/water-potability-sensor-service/internal/interface/rpc"
 	"google.golang.org/grpc"
 )
@@ -22,13 +24,23 @@ func (s *WaterPotabilityServer) PredictWaterPotability(ctx context.Context, in *
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+	path := os.Getenv("CONFIG_FILEPATH")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("opening config file at %s: %v\n", path, err)
+	}
+	cfg := new(config.Config)
+	if err := json.Unmarshal(content, cfg); err != nil {
+		log.Fatalf("parsing config file content: %v\n", err)
 	}
 
 	server := grpc.NewServer()
 	pb.RegisterWaterPotabilityServiceServer(server, &WaterPotabilityServer{})
-	listener, err := net.Listen(os.Getenv("GRPC_PROTOCOL"), os.Getenv("GRPC_ADDR"))
+	listener, err := net.Listen(cfg.GRPC.Protocol, fmt.Sprintf(
+		"%s:%d",
+		cfg.GRPC.Host,
+		cfg.GRPC.Port,
+	))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
