@@ -31,4 +31,4 @@ compose/testing.down:
 		down --detach --no-deps
 
 .PHONY: api grpc generate-rpc compose/up compose/down compose/testing
-.PHONY: compose/testing.down mqttserver
+.PHONY: compose/testing.down

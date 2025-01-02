@@ -9,38 +9,16 @@ networks:
   internal:
 
 services:
-  mosquitto:
-    image: eclipse-mosquitto:2.0.20-openssl
-    volumes:
-      - mosquitto:/mosquitto/data
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - ./passwd:/mosquitto/config/passwd:ro
-    ports:
-      - 1883:1883
+  backend:
+    build:
+      context: ..
+    restart: unless-stopped
     networks:
       - internal
-    # ref https://github.com/eclipse-mosquitto/mosquitto/issues/1270#issuecomment-1476038461
-    healthcheck:
-      test: [
-        "CMD",
-        "mosquitto_sub",
-        "-t",
-        "$$SYS/#",
-        "-u",
-        "${MQTT_USERNAME?:error}",
-        "-P",
-        "${MQTT_PASSWORD?:error}",
-        "-C",
-        "1",
-        "-i",
-        "healthcheck",
-        "-W",
-        "3",
-      ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
+    environment:
+      CONFIG_FILEPATH: /tmp/config.json
+    volumes:
+      - ../config.json:/tmp/config.json:ro
 
   influxdb:
     image: influxdb:2.7.10-alpine
@@ -63,27 +41,3 @@ services:
       retries: 5
       start_period: 20s
       timeout: 10s
-
-  backend:
-    build:
-      context: ..
-    restart: unless-stopped
-    networks:
-      - internal
-    environment:
-      CONFIG_FILEPATH: /tmp/config.json
-    volumes:
-      - ../config.json:/tmp/config.json:ro
-
-  publisher:
-    build:
-      context: ..
-      dockerfile: publisher.Dockerfile
-    restart: unless-stopped
-    networks:
-      - internal
-    environment:
-      CONFIG_FILEPATH: /tmp/config.json
-    volumes:
-      - ../config.publisher.json:/tmp/config.json:ro
-

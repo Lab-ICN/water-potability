@@ -1,19 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	stdlog "log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/lab-icn/water-potability-sensor-service/internal/config"
-	"github.com/lab-icn/water-potability-sensor-service/internal/domain"
 	"github.com/lab-icn/water-potability-sensor-service/internal/grpc"
 	"github.com/lab-icn/water-potability-sensor-service/internal/influxdb"
 	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
@@ -78,21 +74,4 @@ func main() {
 	}()
 	<-done
 	stdlog.Println("exiting...")
-}
-
-func mockPublisher(client mqtt.Client) error {
-	buffer := new(bytes.Buffer)
-	if err := json.NewEncoder(buffer).Encode(domain.WaterPotability{
-		PH:                   7.5,
-		Turbidity:            5.5,
-		TotalDissolvedSolids: 100,
-	}); err != nil {
-		return err
-	}
-	for range 1000 {
-		token := client.Publish("/wp", 1, false, buffer.Bytes())
-		token.Wait()
-		time.Sleep(1 * time.Second)
-	}
-	return nil
 }

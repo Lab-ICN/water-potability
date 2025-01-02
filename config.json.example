@@ -8,8 +8,7 @@
         "protocol": "http",
         "host": "localhost",
         "port": 8086,
-        "username": "username",
-        "password": "password",
+        "token": "token",
         "org": "org",
         "bucket": "bucket"
     },
@@ -17,7 +16,7 @@
         "protocol": "tcp",
         "host": "localhost",
         "port": 8080,
-        "clientID": 1,
+        "clientID": "ClientID",
         "username": "username",
         "password": "password"
     },
