@@ -13,8 +13,7 @@ services:
     build:
       context: ..
     restart: unless-stopped
-    networks:
-      - internal
+    network_mode: host
     environment:
       CONFIG_FILEPATH: /tmp/config.json
     volumes:
