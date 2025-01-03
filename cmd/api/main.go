@@ -12,7 +12,7 @@ import (
 	"github.com/lab-icn/water-potability-sensor-service/internal/config"
 	"github.com/lab-icn/water-potability-sensor-service/internal/grpc"
 	"github.com/lab-icn/water-potability-sensor-service/internal/influxdb"
-	mqttAdapter "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
+	mqttDelivery "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
 	pb "github.com/lab-icn/water-potability-sensor-service/internal/interface/rpc"
 	_mqtt "github.com/lab-icn/water-potability-sensor-service/internal/mqtt"
 	"github.com/lab-icn/water-potability-sensor-service/internal/repository"
@@ -54,7 +54,7 @@ func main() {
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb, &cfg.InfluxDB)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
-	subscriber := mqttAdapter.NewMqttSubscriber(wpService, cfg, &log)
+	subscriber := mqttDelivery.NewMqttSubscriber(wpService, cfg, &log)
 
 	mqtt := _mqtt.Listen(subscriber, cfg, &log)
 	if token := mqtt.Connect(); token.Wait() && token.Error() != nil {

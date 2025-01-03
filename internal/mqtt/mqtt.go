@@ -6,12 +6,12 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lab-icn/water-potability-sensor-service/internal/config"
-	mqttSubscriber "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
+	mqttDelivery "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
 	"github.com/rs/zerolog"
 )
 
 func Listen(
-	subscriber mqttSubscriber.IMqttSubscriber,
+	subscriber mqttDelivery.IMqttSubscriber,
 	cfg *config.Config,
 	log *zerolog.Logger,
 ) mqtt.Client {
