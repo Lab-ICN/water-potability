@@ -60,7 +60,7 @@ func main() {
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb, &cfg.InfluxDB)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
-	mqttAdapter.NewMqttHandler(mqttClient, &cfg.AES, &log, wpService)
+	mqttAdapter.NewMqttHandler(mqttClient, cfg, &log, wpService)
 
 	stdlog.Println("client server running...")
 

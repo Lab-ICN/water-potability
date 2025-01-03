@@ -18,7 +18,8 @@
         "port": 8080,
         "clientID": "ClientID",
         "username": "username",
-        "password": "password"
+        "password": "password",
+        "sensorTopic": "topic"
     },
     "aes": {
         "key": "key",
