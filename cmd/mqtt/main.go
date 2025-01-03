@@ -52,7 +52,7 @@ func main() {
 		}); err != nil {
 			logger.Fatal("parsing map to json", zap.Error(err))
 		}
-		enc, err := aes256.Encrypt(buf.String(), cfg.AES.Key[:aes.BlockSize*2])
+		enc, err := aes256.Encrypt(buf.String(), []byte(cfg.AES.Key)[:aes.BlockSize*2])
 		if err != nil {
 			logger.Fatal("encrypting json string", zap.Error(err))
 		}

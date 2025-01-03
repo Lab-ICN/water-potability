@@ -2,7 +2,6 @@ package mqtt
 
 import (
 	"context"
-	"crypto/aes"
 	"encoding/json"
 	"time"
 
@@ -39,9 +38,10 @@ func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 		Str("topic", msg.Topic()).
 		Msg(string(msg.Payload()))
 
-	jsonstr, err := aes256.Decrypt(
+	jsonstr, err := aes256.DecryptWithIv(
 		string(msg.Payload()),
-		h.cfg.Key[:aes.BlockSize*2],
+		[]byte(h.cfg.Key),
+		[]byte(h.cfg.IV),
 	)
 	if err != nil {
 		h.log.Err(err).

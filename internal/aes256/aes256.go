@@ -44,3 +44,23 @@ func Decrypt(enc string, key []byte) (string, error) {
 	}
 	return string(decrypted), nil
 }
+
+func DecryptWithIv(enc string, key, iv []byte) (string, error) {
+	decoded, err := hex.DecodeString(enc)
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	decrypted, err := gcm.Open(nil, iv, decoded, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(decrypted), nil
+}

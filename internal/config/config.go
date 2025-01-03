@@ -1,9 +1,5 @@
 package config
 
-import (
-	"encoding/json"
-)
-
 type Config struct {
 	AES      AES
 	InfluxDB InfluxDB
@@ -37,6 +33,6 @@ type MQTT struct {
 }
 
 type AES struct {
-	Key json.RawMessage
-	IV  json.RawMessage
+	Key string
+	IV  string
 }
