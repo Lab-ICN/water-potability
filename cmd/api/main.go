@@ -41,13 +41,13 @@ func main() {
 
 	grpcClient, err := grpc.NewClient(cfg)
 	if err != nil {
-		stdlog.Fatalf("Failed to start gRPC connection: %v\n", err)
+		stdlog.Fatalf("failed to start grpc connection: %v\n", err)
 	}
 	defer grpcClient.Close()
 
 	influxdb, err := influxdb.NewClient(ctx, &cfg.InfluxDB)
 	if err != nil {
-		stdlog.Fatalf("Failed to start InfluxDB connection: %v\n", err)
+		stdlog.Fatalf("failed to start influxdb connection: %v\n", err)
 	}
 	defer influxdb.Close()
 
@@ -58,11 +58,9 @@ func main() {
 
 	mqtt, err := _mqtt.Listen(subscriber, cfg, &log)
 	if err != nil {
-		stdlog.Fatalf("Failed to start MQTT connection: %v\n", err)
+		stdlog.Fatalf("failed to start mqtt connection: %v\n", err)
 	}
 	defer mqtt.Disconnect(250)
-
-	stdlog.Println("client server running...")
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGILL, syscall.SIGTERM)
