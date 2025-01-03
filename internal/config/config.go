@@ -30,6 +30,7 @@ type MQTT struct {
 	ClientID    string
 	SensorTopic string
 	Port        uint
+	QOS         byte
 }
 
 type AES struct {

@@ -13,47 +13,45 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type handler struct {
+type subscriber struct {
 	service service.WaterPotabilityServiceItf
 	cfg     *config.AES
 	log     *zerolog.Logger
 }
 
-func NewMqttHandler(
-	client mqtt.Client,
-	cfg *config.Config,
-	log *zerolog.Logger,
-	service service.WaterPotabilityServiceItf,
-) {
-	handler := &handler{service, &cfg.AES, log}
-	token := client.Subscribe(cfg.MQTT.SensorTopic, 1, handler.sensorSubscriber)
-	<-token.Done()
-	if token.Error() != nil {
-		log.Err(token.Error()).Msg("subscribing to mqtt topic")
-	}
+type IMqttSubscriber interface {
+	SensorSubscriber(client mqtt.Client, msg mqtt.Message)
 }
 
-func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
-	h.log.Debug().
+func NewMqttSubscriber(
+	service service.WaterPotabilityServiceItf,
+	cfg *config.Config,
+	log *zerolog.Logger,
+) IMqttSubscriber {
+	return &subscriber{service, &cfg.AES, log}
+}
+
+func (s *subscriber) SensorSubscriber(client mqtt.Client, msg mqtt.Message) {
+	s.log.Debug().
 		Str("topic", msg.Topic()).
 		Msg(string(msg.Payload()))
 
 	jsonstr, err := aes256.DecryptWithIv(
 		string(msg.Payload()),
-		[]byte(h.cfg.Key),
-		[]byte(h.cfg.IV),
+		[]byte(s.cfg.Key),
+		[]byte(s.cfg.IV),
 	)
 	if err != nil {
-		h.log.Err(err).
+		s.log.Err(err).
 			Bytes("payload", msg.Payload()).
 			Msg("decrypting mqtt payload aes cipher")
 		return
 	}
-	h.log.Debug().Msg(jsonstr)
+	s.log.Debug().Msg(jsonstr)
 
 	var potability domain.WaterPotability
 	if err := json.Unmarshal([]byte(jsonstr), &potability); err != nil {
-		h.log.Err(err).
+		s.log.Err(err).
 			Str("payload", jsonstr).
 			Msg("decoding mqtt json payload string to struct")
 		return
@@ -61,8 +59,8 @@ func (h *handler) sensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	if err := h.service.PredictWaterPotability(ctx, potability); err != nil {
-		h.log.Err(err).Msg("predict water potability")
+	if err := s.service.PredictWaterPotability(ctx, potability); err != nil {
+		s.log.Err(err).Msg("predict water potability")
 		return
 	}
 }

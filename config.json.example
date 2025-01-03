@@ -17,6 +17,7 @@
         "host": "localhost",
         "port": 8080,
         "clientID": "ClientID",
+        "qos": 1,
         "username": "username",
         "password": "password",
         "sensorTopic": "topic"

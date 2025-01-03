@@ -6,7 +6,6 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/rs/zerolog v1.33.0
-	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.67.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -14,7 +13,6 @@ require (
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 )
 
 require (

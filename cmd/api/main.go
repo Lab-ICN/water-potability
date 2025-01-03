@@ -45,12 +45,6 @@ func main() {
 	}
 	defer grpcClient.Close()
 
-	mqttClient, err := _mqtt.NewClient(cfg, &log)
-	if err != nil {
-		stdlog.Fatalf("Failed to start MQTT connection: %v\n", err)
-	}
-	defer mqttClient.Disconnect(250)
-
 	influxdb, err := influxdb.NewClient(ctx, &cfg.InfluxDB)
 	if err != nil {
 		stdlog.Fatalf("Failed to start InfluxDB connection: %v\n", err)
@@ -60,7 +54,13 @@ func main() {
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb, &cfg.InfluxDB)
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
-	mqttAdapter.NewMqttHandler(mqttClient, cfg, &log, wpService)
+	subscriber := mqttAdapter.NewMqttSubscriber(wpService, cfg, &log)
+
+	mqtt := _mqtt.Listen(subscriber, cfg, &log)
+	if token := mqtt.Connect(); token.Wait() && token.Error() != nil {
+		stdlog.Fatalf("Failed to start MQTT connection: %v\n", err)
+	}
+	defer mqtt.Disconnect(250)
 
 	stdlog.Println("client server running...")
 

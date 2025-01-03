@@ -6,10 +6,15 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lab-icn/water-potability-sensor-service/internal/config"
+	mqttSubscriber "github.com/lab-icn/water-potability-sensor-service/internal/interface/mqtt"
 	"github.com/rs/zerolog"
 )
 
-func NewClient(cfg *config.Config, log *zerolog.Logger) (mqtt.Client, error) {
+func Listen(
+	subscriber mqttSubscriber.IMqttSubscriber,
+	cfg *config.Config,
+	log *zerolog.Logger,
+) mqtt.Client {
 	opts := mqtt.NewClientOptions().
 		AddBroker(fmt.Sprintf(
 			"%s://%s:%d",
@@ -23,7 +28,6 @@ func NewClient(cfg *config.Config, log *zerolog.Logger) (mqtt.Client, error) {
 		SetKeepAlive(15 * time.Second).
 		SetPingTimeout(10 * time.Second).
 		SetAutoReconnect(true).
-		SetCleanSession(false).
 		SetDefaultPublishHandler(func(_ mqtt.Client, _ mqtt.Message) {}).
 		SetConnectionLostHandler(func(_ mqtt.Client, _ error) {
 			log.Warn().Msg("mqtt connection lost")
@@ -31,13 +35,14 @@ func NewClient(cfg *config.Config, log *zerolog.Logger) (mqtt.Client, error) {
 		SetReconnectingHandler(func(_ mqtt.Client, _ *mqtt.ClientOptions) {
 			log.Info().Msg("mqtt reconnecting")
 		}).
-		SetOnConnectHandler(func(_ mqtt.Client) {
+		SetOnConnectHandler(func(client mqtt.Client) {
 			log.Info().Msg("mqtt connected")
+			token := client.Subscribe(cfg.MQTT.SensorTopic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+			<-token.Done()
+			if err := token.Error(); err != nil {
+				log.Error().Err(err).Msg("attempting to subscribe")
+			}
 		})
 
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		return nil, token.Error()
-	}
-	return client, nil
+	return mqtt.NewClient(opts)
 }
