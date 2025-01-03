@@ -36,7 +36,7 @@ func (s *subscriber) SensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 		Str("topic", msg.Topic()).
 		Msg(string(msg.Payload()))
 
-	jsonstr, err := aes256.DecryptWithIv(
+	jsonstr, err := aes256.Decrypt(
 		string(msg.Payload()),
 		[]byte(s.cfg.Key),
 		[]byte(s.cfg.IV),
