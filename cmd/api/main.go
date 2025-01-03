@@ -56,8 +56,8 @@ func main() {
 	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
 	subscriber := mqttDelivery.NewMqttSubscriber(wpService, cfg, &log)
 
-	mqtt := _mqtt.Listen(subscriber, cfg, &log)
-	if token := mqtt.Connect(); token.Wait() && token.Error() != nil {
+	mqtt, err := _mqtt.Listen(subscriber, cfg, &log)
+	if err != nil {
 		stdlog.Fatalf("Failed to start MQTT connection: %v\n", err)
 	}
 	defer mqtt.Disconnect(250)

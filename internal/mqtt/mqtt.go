@@ -14,7 +14,7 @@ func Listen(
 	subscriber mqttDelivery.IMqttSubscriber,
 	cfg *config.Config,
 	log *zerolog.Logger,
-) mqtt.Client {
+) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
 		AddBroker(fmt.Sprintf(
 			"%s://%s:%d",
@@ -44,5 +44,13 @@ func Listen(
 			}
 		})
 
-	return mqtt.NewClient(opts)
+	client := mqtt.NewClient(opts)
+
+	token := client.Connect()
+	<-token.Done()
+	if err := token.Error(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
