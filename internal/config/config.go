@@ -27,12 +27,13 @@ type InfluxDB struct {
 }
 
 type MQTT struct {
-	Protocol string
-	Host     string
-	Username string
-	Password string
-	ClientID string
-	Port     uint
+	Protocol    string
+	Host        string
+	Username    string
+	Password    string
+	ClientID    string
+	SensorTopic string
+	Port        uint
 }
 
 type AES struct {

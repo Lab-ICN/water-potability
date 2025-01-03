@@ -22,12 +22,12 @@ type handler struct {
 
 func NewMqttHandler(
 	client mqtt.Client,
-	cfg *config.AES,
+	cfg *config.Config,
 	log *zerolog.Logger,
 	service service.WaterPotabilityServiceItf,
 ) {
-	handler := &handler{service, cfg, log}
-	token := client.Subscribe("/wp", 1, handler.sensorSubscriber)
+	handler := &handler{service, &cfg.AES, log}
+	token := client.Subscribe(cfg.MQTT.SensorTopic, 1, handler.sensorSubscriber)
 	<-token.Done()
 	if token.Error() != nil {
 		log.Err(token.Error()).Msg("subscribing to mqtt topic")
