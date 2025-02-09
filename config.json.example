@@ -14,13 +14,12 @@
     },
     "mqtt": {
         "protocol": "tcp",
-        "host": "localhost",
-        "port": 8080,
-        "clientID": "ClientID",
+        "host": "",
+        "port": 0,
         "qos": 1,
-        "username": "username",
-        "password": "password",
-        "sensorTopic": "topic"
+        "username": "",
+        "password": "",
+        "sensorTopics": ""
     },
     "aes": {
         "key": "key",

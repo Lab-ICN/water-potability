@@ -22,7 +22,6 @@ func Listen(
 			cfg.MQTT.Host,
 			cfg.MQTT.Port,
 		)).
-		SetClientID(cfg.MQTT.ClientID).
 		SetUsername(cfg.MQTT.Username).
 		SetPassword(cfg.MQTT.Password).
 		SetKeepAlive(15 * time.Second).
@@ -44,9 +43,19 @@ func Listen(
 				Str("protocol", "mqtt").
 				Msg("connected")
 
-			token := client.Subscribe(cfg.MQTT.SensorTopic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-			<-token.Done()
-			if err := token.Error(); err != nil {
+			errChan := make(chan error)
+
+			for _, topic := range cfg.MQTT.SensorTopics {
+				go func(topic string) {
+					token := client.Subscribe(topic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+					<-token.Done()
+					if err := token.Error(); err != nil {
+						errChan <- err
+					}
+				}(topic)
+			}
+
+			if err := <-errChan; err != nil {
 				log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
 			}
 		})

@@ -45,15 +45,19 @@ func main() {
 	}
 	defer grpcClient.Close()
 
+	log.Info().Msg("grpc connection established")
+
 	influxdb, err := influxdb.NewClient(ctx, &cfg.InfluxDB)
 	if err != nil {
 		stdlog.Fatalf("failed to start influxdb connection: %v\n", err)
 	}
 	defer influxdb.Close()
 
+	log.Info().Msg("influxdb connection established")
+
 	wpClient := pb.NewWaterPotabilityServiceClient(grpcClient)
 	wpRepository := repository.NewWaterPotabilityRepository(influxdb, &cfg.InfluxDB)
-	wpService := service.NewWaterPotabilityService(wpRepository, wpClient)
+	wpService := service.NewWaterPotabilityService(wpRepository, wpClient, log)
 	subscriber := mqttDelivery.NewMqttSubscriber(wpService, cfg, &log)
 
 	mqtt, err := _mqtt.Listen(subscriber, cfg, &log)
