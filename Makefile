@@ -1,11 +1,11 @@
 api:
-	@CONFIG_FILEPATH=config.json go run cmd/api/main.go
+	@CONFIG_FILEPATH=config.json go run cmd/subsciber/main.go
+
+api-windows:
+	@set CONFIG_FILEPATH=config.json && go run cmd/subscriber/main.go
 
 grpc:
 	@go run cmd/grpc/server.go
-
-mqttserver:
-	@CONFIG_FILEPATH=config.publisher.json go run cmd/mqtt/main.go
 
 generate-rpc:
 	@protoc --proto_path=./proto ./proto/*.proto --go_out=. --go-grpc_out=.

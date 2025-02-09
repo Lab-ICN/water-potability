@@ -57,6 +57,8 @@ func (s *subscriber) SensorSubscriber(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
+	potability.Node = msg.Topic()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if err := s.service.PredictWaterPotability(ctx, potability); err != nil {

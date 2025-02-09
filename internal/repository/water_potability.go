@@ -27,11 +27,11 @@ func NewWaterPotabilityRepository(
 
 func (r *WaterPotabilityRepository) WriteWaterPotabilityWithPrediction(ctx context.Context, wp domain.WaterPotabilityWithPrediction) error {
 	writeApi := influxdb2.NewPointWithMeasurement("water_potability_with_prediction").
+		AddTag("node", wp.Node).
 		AddField("prediction", wp.Prediction).
 		AddField("ph", wp.PH).
-		AddField("total_dissolved_solids", wp.TotalDissolvedSolids).
+		AddField("total_dissolved_solid", wp.TotalDissolvedSolids).
 		AddField("turbidity", wp.Turbidity).
-		AddField("level", wp.Level).
 		SetTime(time.Now())
 
 	return r.influxdb.WriteAPIBlocking(r.cfg.Org, r.cfg.Bucket).WritePoint(ctx, writeApi)
