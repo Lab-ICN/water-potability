@@ -22,7 +22,6 @@ func Listen(
 			cfg.MQTT.Host,
 			cfg.MQTT.Port,
 		)).
-		SetClientID(cfg.MQTT.ClientID).
 		SetUsername(cfg.MQTT.Username).
 		SetPassword(cfg.MQTT.Password).
 		SetKeepAlive(15 * time.Second).
@@ -44,11 +43,49 @@ func Listen(
 				Str("protocol", "mqtt").
 				Msg("connected")
 
-			token := client.Subscribe(cfg.MQTT.SensorTopic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-			<-token.Done()
-			if err := token.Error(); err != nil {
-				log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
-			}
+			errChan := make(chan error)
+
+			go func() {
+				token := client.Subscribe(cfg.MQTT.SensorTopicEsp1, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+				<-token.Done()
+				if err := token.Error(); err != nil {
+					errChan <- err
+				}
+			}()
+
+			go func() {
+				token := client.Subscribe(cfg.MQTT.SensorTopicEsp2, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+				<-token.Done()
+				if err := token.Error(); err != nil {
+					errChan <- err
+				}
+			}()
+
+			go func() {
+				token := client.Subscribe(cfg.MQTT.SensorTopicRasp1, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+				<-token.Done()
+				if err := token.Error(); err != nil {
+					errChan <- err
+				}
+			}()
+
+			go func() {
+				token := client.Subscribe(cfg.MQTT.SensorTopicRasp2, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+				<-token.Done()
+				if err := token.Error(); err != nil {
+					errChan <- err
+				}
+			}()
+
+			err := <-errChan
+			log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
+
+			// token := client.Subscribe(cfg.MQTT.SensorTopic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+
+			// <-token.Done()
+			// if err := token.Error(); err != nil {
+			// 	log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
+			// }
 		})
 
 	client := mqtt.NewClient(opts)
