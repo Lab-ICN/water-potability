@@ -1,5 +1,5 @@
 api:
-	@CONFIG_FILEPATH=config.json go run cmd/subsciber/main.go
+	@CONFIG_FILEPATH=config.json go run cmd/subscriber/main.go
 
 api-windows:
 	@set CONFIG_FILEPATH=config.json && go run cmd/subscriber/main.go
