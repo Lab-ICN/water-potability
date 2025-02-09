@@ -45,47 +45,19 @@ func Listen(
 
 			errChan := make(chan error)
 
-			go func() {
-				token := client.Subscribe(cfg.MQTT.SensorTopicEsp1, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-				<-token.Done()
-				if err := token.Error(); err != nil {
-					errChan <- err
-				}
-			}()
+			for _, topic := range cfg.MQTT.SensorTopics {
+				go func(topic string) {
+					token := client.Subscribe(topic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
+					<-token.Done()
+					if err := token.Error(); err != nil {
+						errChan <- err
+					}
+				}(topic)
+			}
 
-			go func() {
-				token := client.Subscribe(cfg.MQTT.SensorTopicEsp2, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-				<-token.Done()
-				if err := token.Error(); err != nil {
-					errChan <- err
-				}
-			}()
-
-			go func() {
-				token := client.Subscribe(cfg.MQTT.SensorTopicRasp1, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-				<-token.Done()
-				if err := token.Error(); err != nil {
-					errChan <- err
-				}
-			}()
-
-			go func() {
-				token := client.Subscribe(cfg.MQTT.SensorTopicRasp2, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-				<-token.Done()
-				if err := token.Error(); err != nil {
-					errChan <- err
-				}
-			}()
-
-			err := <-errChan
-			log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
-
-			// token := client.Subscribe(cfg.MQTT.SensorTopic, cfg.MQTT.QOS, subscriber.SensorSubscriber)
-
-			// <-token.Done()
-			// if err := token.Error(); err != nil {
-			// 	log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
-			// }
+			if err := <-errChan; err != nil {
+				log.Error().Err(err).Msg("attempting to subscribe to mqtt topic")
+			}
 		})
 
 	client := mqtt.NewClient(opts)

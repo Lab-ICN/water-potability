@@ -23,17 +23,14 @@ type InfluxDB struct {
 }
 
 type MQTT struct {
-	Protocol         string
-	Host             string
-	Username         string
-	Password         string
-	ClientID         string
-	SensorTopicEsp1  string
-	SensorTopicEsp2  string
-	SensorTopicRasp1 string
-	SensorTopicRasp2 string
-	Port             uint
-	QOS              byte
+	Protocol     string
+	Host         string
+	Username     string
+	Password     string
+	ClientID     string
+	SensorTopics []string
+	Port         uint
+	QOS          byte
 }
 
 type AES struct {

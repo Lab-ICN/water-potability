@@ -19,10 +19,7 @@
         "qos": 1,
         "username": "",
         "password": "",
-        "sensorTopicEsp1": "",
-        "sensorTopicEsp2": "",
-        "sensorTopicRasp1": "",
-        "sensorTopicRasp2": ""
+        "sensorTopics": ""
     },
     "aes": {
         "key": "key",
